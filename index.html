@@ -1,4 +1,9 @@
-<title>TinyURL Design Playbook</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Design Notes</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -12,14 +17,6 @@
   --accent:#c1622a;
   --accent-ink:#fff9f4;
   --accent-soft:#f3e1d1;
-  --good:#3f7d5c;
-  --good-soft:#dcece2;
-  --warn:#96721c;
-  --warn-soft:#f2e6c8;
-  --bad:#a8453c;
-  --bad-soft:#f3ded9;
-  --code-bg:#1b2320;
-  --code-ink:#eef0ed;
   --shadow: 0 1px 2px rgba(20,30,25,.06), 0 8px 24px rgba(20,30,25,.05);
 }
 @media (prefers-color-scheme: dark){
@@ -33,14 +30,6 @@
     --accent:#e2915a;
     --accent-ink:#181008;
     --accent-soft:#3a2a1c;
-    --good:#74c19a;
-    --good-soft:#1e332a;
-    --warn:#d8b45e;
-    --warn-soft:#332b17;
-    --bad:#e0897f;
-    --bad-soft:#3a2320;
-    --code-bg:#0d1213;
-    --code-ink:#dbe4de;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   }
 }
@@ -54,728 +43,95 @@
   --accent:#e2915a;
   --accent-ink:#181008;
   --accent-soft:#3a2a1c;
-  --good:#74c19a;
-  --good-soft:#1e332a;
-  --warn:#d8b45e;
-  --warn-soft:#332b17;
-  --bad:#e0897f;
-  --bad-soft:#3a2320;
-  --code-bg:#0d1213;
-  --code-ink:#dbe4de;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
 }
-
 *{box-sizing:border-box;}
+html,body{ margin:0; }
 body{
   background:var(--paper);
   color:var(--ink);
   font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   padding:0 clamp(16px,4vw,48px);
-  padding-block:clamp(24px,4vw,56px) 80px;
+  padding-block:clamp(28px,5vw,64px) 80px;
   line-height:1.6;
 }
-h1,h2,h3{
+h1,h2{
   font-family:"Fraunces", Georgia, "Times New Roman", serif;
   font-weight:600;
   text-wrap:balance;
   letter-spacing:-0.01em;
-  color:var(--ink);
 }
-code, .mono, .short-url, td.num, .step-num{
-  font-family:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-.num{ font-variant-numeric: tabular-nums; }
-
-a{ color:var(--accent); }
-
-.wrap{ max-width:1180px; margin:0 auto; }
-
-/* ---- header ---- */
-.masthead{
-  display:flex; flex-direction:column; gap:10px;
-  max-width:760px;
-  margin-bottom:clamp(28px,4vw,44px);
-}
+.wrap{ max-width:920px; margin:0 auto; }
 .eyebrow{
   font-family:"IBM Plex Mono", monospace;
-  font-size:12.5px;
-  letter-spacing:.09em;
-  text-transform:uppercase;
+  font-size:12.5px; letter-spacing:.09em; text-transform:uppercase;
   color:var(--accent);
   display:flex; align-items:center; gap:8px;
 }
-.eyebrow::before{
-  content:"";
-  width:7px; height:7px; border-radius:50%;
-  background:var(--accent);
-  display:inline-block;
-}
-h1.title{ font-size:clamp(30px,4.4vw,44px); line-height:1.08; margin:0; }
-.dek{ color:var(--muted); font-size:16.5px; max-width:62ch; margin:0; }
+.eyebrow::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--accent); display:inline-block; }
+h1{ font-size:clamp(28px,4.4vw,42px); line-height:1.08; margin:10px 0 6px; }
+.dek{ color:var(--muted); font-size:16px; max-width:60ch; margin:0 0 clamp(30px,5vw,48px); }
 
-/* ---- layout: sticky nav + content ---- */
-.layout{
-  display:grid;
-  grid-template-columns: 220px minmax(0,1fr);
-  gap:clamp(20px,4vw,56px);
-  align-items:start;
-}
-@media (max-width: 860px){
-  .layout{ grid-template-columns: 1fr; }
-}
-
-nav.toc{
-  position:sticky; top:20px;
+.list{ display:flex; flex-direction:column; gap:14px; }
+.entry{
+  display:flex; align-items:center; gap:18px;
   border:1px solid var(--line);
   background:var(--surface);
-  border-radius:10px;
-  padding:14px 14px 16px;
+  border-radius:12px;
+  padding:18px 20px;
   box-shadow:var(--shadow);
-  max-height:calc(100vh - 40px);
-  overflow-y:auto;
-}
-@media (max-width: 860px){
-  nav.toc{
-    position:static;
-    max-height:none;
-    display:flex; gap:8px; overflow-x:auto;
-    padding:10px;
-  }
-  nav.toc a{ white-space:nowrap; }
-  nav.toc .toc-title{ display:none; }
-}
-nav.toc .toc-title{
-  font-size:11px; text-transform:uppercase; letter-spacing:.08em;
-  color:var(--muted); margin:0 0 8px 4px;
-}
-nav.toc a{
-  display:block;
-  font-size:13.5px;
-  color:var(--muted);
   text-decoration:none;
-  padding:6px 8px;
-  border-radius:6px;
+  color:inherit;
+  transition:border-color .15s ease;
 }
-nav.toc a:hover{ background:var(--surface-2); color:var(--ink); }
-nav.toc a .n{ color:var(--accent); margin-right:6px; font-family:"IBM Plex Mono",monospace; }
-
-main{ min-width:0; display:flex; flex-direction:column; gap:clamp(36px,5vw,56px); }
-
-section.step{ scroll-margin-top:20px; }
-.step-head{
-  display:flex; align-items:baseline; gap:14px;
-  border-bottom:1px solid var(--line);
-  padding-bottom:10px;
-  margin-bottom:16px;
-}
-.step-num{
-  font-size:13px; color:var(--accent-ink); background:var(--accent);
-  padding:2px 9px; border-radius:20px; font-weight:600;
-}
-.step-head h2{ font-size:clamp(20px,2.6vw,26px); margin:0; }
-.step-sub{ color:var(--muted); font-size:14.5px; margin:2px 0 0; }
-
-.prose p{ max-width:70ch; }
-.prose{ display:flex; flex-direction:column; gap:12px; }
-
-.callout{
-  border:1px solid var(--line);
-  border-left:3px solid var(--accent);
-  background:var(--surface);
-  border-radius:8px;
-  padding:12px 16px;
-  font-size:14.5px;
-  max-width:70ch;
-  box-shadow:var(--shadow);
-}
-.callout .label{
+.entry:hover{ border-color:var(--accent); }
+.entry .idx{
   font-family:"IBM Plex Mono",monospace;
-  font-size:11px; text-transform:uppercase; letter-spacing:.08em;
-  color:var(--accent); margin-bottom:4px; display:block;
+  font-size:13px; color:var(--accent-ink); background:var(--accent);
+  border-radius:20px; padding:3px 10px; flex:none;
 }
+.entry .body{ flex:1; min-width:0; }
+.entry h2{ font-size:18px; margin:0 0 3px; font-family:"IBM Plex Sans",sans-serif; font-weight:600; }
+.entry p{ margin:0; font-size:13.5px; color:var(--muted); }
+.entry .arrow{ font-family:"IBM Plex Mono",monospace; color:var(--muted); flex:none; }
 
-.grid-cards{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:12px;
+.entry.placeholder{
+  border-style:dashed;
+  color:var(--muted);
+  box-shadow:none;
 }
-.card{
-  border:1px solid var(--line);
-  background:var(--surface);
-  border-radius:10px;
-  padding:14px 16px;
-  box-shadow:var(--shadow);
-}
-.card h4{ margin:0 0 6px; font-size:14.5px; font-family:"IBM Plex Sans",sans-serif; font-weight:600; }
-.card p{ margin:0; font-size:13.5px; color:var(--muted); }
-.card .big{ font-family:"IBM Plex Mono",monospace; font-size:22px; color:var(--accent); display:block; margin-bottom:2px; }
+.entry.placeholder .idx{ background:var(--surface-2); color:var(--muted); }
+.entry.placeholder:hover{ border-color:var(--line); }
 
-table{ border-collapse:collapse; width:100%; font-size:14px; }
-.table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
-.table-wrap table{ min-width:520px; }
-th,td{ text-align:left; padding:9px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
-thead th{ background:var(--surface-2); font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; }
-tbody tr:last-child td{ border-bottom:none; }
-tbody{ background:var(--surface); }
-td.num{ font-variant-numeric:tabular-nums; }
-
-.pill{
-  display:inline-block; padding:2px 9px; border-radius:20px;
-  font-size:12px; font-weight:600; font-family:"IBM Plex Mono",monospace;
-}
-.pill.good{ background:var(--good-soft); color:var(--good); }
-.pill.warn{ background:var(--warn-soft); color:var(--warn); }
-.pill.bad{ background:var(--bad-soft); color:var(--bad); }
-
-pre{
-  background:var(--code-bg); color:var(--code-ink);
-  border-radius:10px; padding:14px 16px;
-  overflow-x:auto; font-size:13px; line-height:1.55;
-  box-shadow:var(--shadow);
-}
-pre code{ font-family:"IBM Plex Mono",monospace; }
-.short-url{
-  background:var(--accent-soft); color:var(--accent);
-  padding:1px 7px; border-radius:5px; font-size:.92em;
-}
-
-figure{ margin:0; display:flex; flex-direction:column; gap:10px; }
-figure svg{ max-width:100%; height:auto; display:block; }
-.diagram-frame{
-  border:1px solid var(--line); background:var(--surface);
-  border-radius:12px; padding:clamp(10px,2vw,22px);
-  box-shadow:var(--shadow);
-}
-figcaption{ font-size:13px; color:var(--muted); max-width:70ch; }
-figcaption b{ color:var(--ink); }
-
-.qa{ display:flex; flex-direction:column; gap:10px; }
-.qa-item{ border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:12px 16px; box-shadow:var(--shadow); }
-.qa-item .q{ font-weight:600; font-size:14.5px; margin-bottom:4px; }
-.qa-item .a{ font-size:14px; color:var(--muted); }
-
-.script{
-  border:1px solid var(--line); background:var(--surface); border-radius:12px;
-  padding:18px 20px; box-shadow:var(--shadow);
-  display:flex; flex-direction:column; gap:10px;
-}
-.script ol{ margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; font-size:14.5px; }
-.script ol b{ color:var(--accent); }
-
-footer{ margin-top:60px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+footer{ margin-top:56px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
 </style>
-
+</head>
+<body>
 <div class="wrap">
+  <span class="eyebrow">Interview Prep Library</span>
+  <h1>System Design Notes</h1>
+  <p class="dek">Step-by-step design walkthroughs, one per topic — requirements, estimation, architecture diagrams, and the follow-up questions each one tends to draw.</p>
 
-  <div class="masthead">
-    <span class="eyebrow">System Design Interview Walkthrough</span>
-    <h1 class="title">The TinyURL Design Playbook</h1>
-    <p class="dek">A repeatable order of operations for the URL-shortener question — what to say, what to estimate, what to draw, and the follow-up curveballs that separate a pass from a strong pass.</p>
+  <div class="list">
+    <a class="entry" href="tinyurl/">
+      <span class="idx">01</span>
+      <span class="body">
+        <h2>TinyURL — URL Shortener</h2>
+        <p>RADIO framework walkthrough: estimation, short-code generation, cache-aside architecture, read/write paths, and curveball follow-ups.</p>
+      </span>
+      <span class="arrow">→</span>
+    </a>
+
+    <span class="entry placeholder">
+      <span class="idx">02</span>
+      <span class="body">
+        <h2>Next design — coming soon</h2>
+        <p>New topics land here as they're added.</p>
+      </span>
+    </span>
   </div>
 
-  <div class="layout">
-    <nav class="toc" aria-label="Section navigation">
-      <p class="toc-title">Jump to</p>
-      <a href="#framework"><span class="n">00</span>The framework</a>
-      <a href="#requirements"><span class="n">01</span>Requirements</a>
-      <a href="#estimation"><span class="n">02</span>Estimation</a>
-      <a href="#api"><span class="n">03</span>API design</a>
-      <a href="#data-model"><span class="n">04</span>Data model</a>
-      <a href="#encoding"><span class="n">05</span>Short-code generation</a>
-      <a href="#architecture"><span class="n">06</span>Architecture</a>
-      <a href="#paths"><span class="n">07</span>Read &amp; write paths</a>
-      <a href="#scaling"><span class="n">08</span>Scaling &amp; caching</a>
-      <a href="#redirect"><span class="n">09</span>301 vs 302</a>
-      <a href="#analytics"><span class="n">10</span>Analytics</a>
-      <a href="#edge-cases"><span class="n">11</span>Edge cases</a>
-      <a href="#followups"><span class="n">12</span>Curveball Q&amp;A</a>
-      <a href="#script"><span class="n">13</span>The 40-min script</a>
-    </nav>
-
-    <main>
-
-      <section class="step" id="framework">
-        <div class="step-head">
-          <span class="step-num">00</span>
-          <div>
-            <h2>The framework: RADIO</h2>
-            <p class="step-sub">Say the order out loud before you start — it buys you structure the interviewer can follow.</p>
-          </div>
-        </div>
-        <div class="prose">
-          <p>Every "design X" interview rewards the same five moves, in the same order. For TinyURL they map cleanly:</p>
-        </div>
-        <div class="grid-cards" style="margin-top:8px">
-          <div class="card"><h4>R — Requirements</h4><p>Functional + non-functional. Ask before you assume.</p></div>
-          <div class="card"><h4>A — API + estimation</h4><p>Shape the interface, then size the traffic and storage it implies.</p></div>
-          <div class="card"><h4>D — Data model</h4><p>Tables, keys, and which store fits the access pattern.</p></div>
-          <div class="card"><h4>I — Implementation</h4><p>The algorithm (short-code generation) and the high-level architecture.</p></div>
-          <div class="card"><h4>O — Optimize</h4><p>Cache, shard, replicate, harden — then handle the curveballs.</p></div>
-        </div>
-        <div class="callout" style="margin-top:14px">
-          <span class="label">Why this order</span>
-          Interviewers are grading how you think, not whether you land on the "correct" architecture. Narrating RADIO out loud turns 40 minutes of silence-then-a-diagram into a conversation they can steer — which is what they're actually evaluating.
-        </div>
-      </section>
-
-      <section class="step" id="requirements">
-        <div class="step-head">
-          <span class="step-num">01</span>
-          <div>
-            <h2>Clarify requirements</h2>
-            <p class="step-sub">Two minutes of questions here prevents twenty minutes of designing the wrong system.</p>
-          </div>
-        </div>
-        <div class="prose">
-          <p>Split the board in two — functional and non-functional — and ask before assuming either column.</p>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th style="width:30%">Ask</th><th>Why it matters</th><th style="width:22%">Typical answer</th></tr></thead>
-            <tbody>
-              <tr><td>Custom aliases?</td><td>Changes the write path — you can no longer always generate the code yourself.</td><td><span class="pill good">Yes, optional</span></td></tr>
-              <tr><td>Do links expire?</td><td>Determines whether you need a TTL field and a cleanup job at all.</td><td><span class="pill good">Yes, default 5 yrs</span></td></tr>
-              <tr><td>Analytics on clicks?</td><td>Adds a whole async subsystem — decide now whether it's in scope.</td><td><span class="pill good">Yes, basic counts</span></td></tr>
-              <tr><td>Read:write ratio?</td><td>Drives every caching and replication decision later.</td><td><span class="pill warn">~100:1</span></td></tr>
-              <tr><td>Redirect must be instant?</td><td>Rules out synchronous work (like logging) on the hot path.</td><td><span class="pill good">Yes, &lt;100ms</span></td></tr>
-              <tr><td>Scale target?</td><td>Sets the numbers for step 02 — don't guess a number, ask for one.</td><td><span class="pill warn">100M new URLs/mo</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="callout">
-          <span class="label">Non-functional, state these yourself</span>
-          Highly available &gt; strongly consistent (a stale redirect is fine, a down redirect is not) · low latency on redirect · the short code should not be guessable in sequence · the system should degrade gracefully under load, not fail.
-        </div>
-      </section>
-
-      <section class="step" id="estimation">
-        <div class="step-head">
-          <span class="step-num">02</span>
-          <div>
-            <h2>Back-of-envelope estimation</h2>
-            <p class="step-sub">Round aggressively. The interviewer is checking your instinct for orders of magnitude, not your arithmetic.</p>
-          </div>
-        </div>
-        <div class="grid-cards">
-          <div class="card"><span class="big">100M</span><h4>New URLs / month</h4><p>≈ 40 writes/sec average</p></div>
-          <div class="card"><span class="big">10B</span><h4>Redirects / month</h4><p>≈ 4,000 reads/sec average, spikier at peak</p></div>
-          <div class="card"><span class="big">500B</span><h4>Total URLs over 5 yrs</h4><p>100M/mo × 12 × 5</p></div>
-          <div class="card"><span class="big">~250 TB</span><h4>Storage over 5 yrs</h4><p>500B rows × ~500 bytes/row</p></div>
-        </div>
-        <div class="table-wrap" style="margin-top:14px">
-          <table>
-            <thead><tr><th>Quantity</th><th>Napkin math</th><th>Result</th></tr></thead>
-            <tbody>
-              <tr><td>Writes/sec (avg)</td><td class="num">100,000,000 / (30×24×3600)</td><td class="num">≈ 40/s</td></tr>
-              <tr><td>Reads/sec (avg)</td><td class="num">100:1 ratio × 40/s</td><td class="num">≈ 4,000/s</td></tr>
-              <tr><td>Reads/sec (peak, ×10)</td><td class="num">4,000 × 10</td><td class="num">≈ 40,000/s</td></tr>
-              <tr><td>Row size</td><td>short_code + long_url + metadata</td><td class="num">≈ 500 B</td></tr>
-              <tr><td>5-year storage</td><td class="num">500B rows × 500 B</td><td class="num">≈ 250 TB</td></tr>
-              <tr><td>Key-space needed</td><td>62 chars, need &gt; 500B combos</td><td class="num">62⁷ ≈ 3.5 trillion</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="callout">
-          <span class="label">The number that drives everything downstream</span>
-          62⁷ ≈ 3.5 trillion is comfortably above the 500 billion URLs you'll ever need — <b>that's why a 7-character base62 code is the answer</b>, and it's why you can say it with confidence instead of guessing at length.
-        </div>
-      </section>
-
-      <section class="step" id="api">
-        <div class="step-head">
-          <span class="step-num">03</span>
-          <div>
-            <h2>API design</h2>
-            <p class="step-sub">Three endpoints cover the whole surface area. Sketch them before the data model — the model falls out of the response shape.</p>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Endpoint</th><th>Body / params</th><th>Returns</th></tr></thead>
-            <tbody>
-              <tr><td class="mono">POST /api/v1/shorten</td><td class="mono">{ longUrl, customAlias?, ttl? }</td><td class="mono">201 { shortUrl }</td></tr>
-              <tr><td class="mono">GET /{shortCode}</td><td class="mono">—</td><td class="mono">301/302 → longUrl</td></tr>
-              <tr><td class="mono">GET /api/v1/{shortCode}/stats</td><td class="mono">—</td><td class="mono">200 { clicks, createdAt, ... }</td></tr>
-              <tr><td class="mono">DELETE /api/v1/{shortCode}</td><td class="mono">auth token</td><td class="mono">204</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="prose"><p>Say out loud: idempotency matters on <code>POST /shorten</code> — if the same long URL is submitted twice without a custom alias, decide (and state) whether you return the existing short code or mint a new one. Either is defensible; having an opinion is what's graded.</p></div>
-      </section>
-
-      <section class="step" id="data-model">
-        <div class="step-head">
-          <span class="step-num">04</span>
-          <div>
-            <h2>Data model</h2>
-            <p class="step-sub">One table, one obvious index, and a deliberate choice of store.</p>
-          </div>
-        </div>
-        <pre><code>urls
-├─ short_code   VARCHAR(7)   PRIMARY KEY   -- indexed, the hot lookup
-├─ long_url     TEXT
-├─ user_id      BIGINT       NULL          -- FK, null for anonymous
-├─ created_at   TIMESTAMP
-├─ expires_at   TIMESTAMP    NULL
-└─ click_count  BIGINT       DEFAULT 0     -- or move to a separate analytics store
-
-users
-├─ user_id      BIGINT PRIMARY KEY
-└─ email        VARCHAR</code></pre>
-        <div class="table-wrap" style="margin-top:14px">
-          <table>
-            <thead><tr><th>Choice</th><th>SQL (Postgres/MySQL)</th><th>NoSQL (DynamoDB/Cassandra)</th></tr></thead>
-            <tbody>
-              <tr><td>Access pattern fit</td><td>Fine — access is by primary key, joins are rare</td><td>Excellent — pure key→value lookup, no joins ever needed</td></tr>
-              <tr><td>Scale</td><td>Needs manual sharding past a point</td><td>Scales horizontally by design</td></tr>
-              <tr><td>Recommendation</td><td colspan="2"><span class="pill good">NoSQL key-value store</span> — the workload is a key lookup at massive scale with no relational queries; that's exactly what wide-column/KV stores are built for.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="step" id="encoding">
-        <div class="step-head">
-          <span class="step-num">05</span>
-          <div>
-            <h2>Short-code generation</h2>
-            <p class="step-sub">The one algorithmic decision the whole interview hinges on. Know two approaches and argue for one.</p>
-          </div>
-        </div>
-        <div class="prose"><p>The short code is a base62 string (<code>a–z A–Z 0–9</code>, 62 symbols). The question is <i>how you pick the underlying number</i> before encoding it.</p></div>
-
-        <figure class="diagram-frame">
-          <svg viewBox="0 0 920 360" role="img" aria-label="Comparison of two short-code generation strategies: range-based counters versus hash-and-check, showing that the counter approach skips the collision-retry loop entirely">
-            <defs>
-              <marker id="arrHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                <polygon points="0,0 7,3 0,6" fill="currentColor"/>
-              </marker>
-            </defs>
-            <text x="230" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor" font-family="IBM Plex Sans, sans-serif">Option A — Range-based counter</text>
-            <text x="690" y="28" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor" font-family="IBM Plex Sans, sans-serif">Option B — Hash + collision check</text>
-            <line x1="460" y1="10" x2="460" y2="340" stroke="currentColor" stroke-opacity="0.15"/>
-
-            <!-- Option A chain -->
-            <g font-family="IBM Plex Mono, monospace" font-size="12.5">
-              <rect x="70" y="55" width="320" height="42" rx="8" fill="none" stroke="currentColor"/>
-              <text x="230" y="80" text-anchor="middle" fill="currentColor">App server requests an ID range</text>
-
-              <line x1="230" y1="97" x2="230" y2="130" stroke="currentColor" marker-end="url(#arrHead)"/>
-              <rect x="70" y="130" width="320" height="42" rx="8" fill="none" stroke="currentColor"/>
-              <text x="230" y="155" text-anchor="middle" fill="currentColor">Ticket server hands out [n..n+1000)</text>
-
-              <line x1="230" y1="172" x2="230" y2="205" stroke="currentColor" marker-end="url(#arrHead)"/>
-              <rect x="70" y="205" width="320" height="42" rx="8" fill="none" stroke="var(--accent)"/>
-              <text x="230" y="230" text-anchor="middle" fill="var(--accent)" font-weight="600">Server assigns IDs from its range in memory</text>
-
-              <line x1="230" y1="247" x2="230" y2="280" stroke="currentColor" marker-end="url(#arrHead)"/>
-              <rect x="70" y="280" width="320" height="42" rx="8" fill="none" stroke="currentColor"/>
-              <text x="230" y="305" text-anchor="middle" fill="currentColor">base62-encode(id) → 7-char code</text>
-            </g>
-
-            <!-- Option B chain -->
-            <g font-family="IBM Plex Mono, monospace" font-size="12.5">
-              <rect x="530" y="55" width="320" height="42" rx="8" fill="none" stroke="currentColor"/>
-              <text x="690" y="80" text-anchor="middle" fill="currentColor">md5(long_url), take first 7 base62 chars</text>
-
-              <line x1="690" y1="97" x2="690" y2="130" stroke="currentColor" marker-end="url(#arrHead)"/>
-              <rect x="530" y="130" width="320" height="42" rx="8" fill="none" stroke="currentColor"/>
-              <text x="690" y="155" text-anchor="middle" fill="currentColor">Check store: does code already exist?</text>
-
-              <line x1="690" y1="172" x2="620" y2="205" stroke="currentColor" marker-end="url(#arrHead)"/>
-              <line x1="690" y1="172" x2="760" y2="205" stroke="currentColor" marker-end="url(#arrHead)"/>
-              <text x="605" y="196" text-anchor="end" fill="var(--good)" font-size="11">no</text>
-              <text x="775" y="196" text-anchor="start" fill="var(--bad)" font-size="11">yes</text>
-
-              <rect x="490" y="205" width="180" height="42" rx="8" fill="none" stroke="var(--good)"/>
-              <text x="580" y="230" text-anchor="middle" fill="var(--good)">Store it, done</text>
-
-              <rect x="690" y="205" width="180" height="42" rx="8" fill="none" stroke="var(--bad)"/>
-              <text x="780" y="230" text-anchor="middle" fill="var(--bad)">Collision — re-salt &amp; retry</text>
-
-              <path d="M 780 247 C 780 275, 690 260, 690 172" fill="none" stroke="var(--bad)" stroke-dasharray="3 3" marker-end="url(#arrHead)"/>
-            </g>
-
-            <text x="230" y="345" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.65" font-family="IBM Plex Sans, sans-serif">No collisions possible — IDs are pre-allocated and unique by construction</text>
-            <text x="690" y="345" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity="0.65" font-family="IBM Plex Sans, sans-serif">Extra DB round-trip per write, and a retry loop under load</text>
-          </svg>
-          <figcaption><b>Why this matters:</b> Option A removes the collision-check round trip from the write path entirely, at the cost of running a small coordination service (a "ticket server," the same pattern behind Snowflake / Flickr's ticket-server ID generator). That tradeoff — one extra always-on service vs. a retry loop on every write — is the actual decision to defend, not the base62 alphabet.</figcaption>
-        </figure>
-
-        <div class="callout" style="margin-top:14px">
-          <span class="label">Recommendation to state out loud</span>
-          Go with <b>range-based counters</b>: each app server checks out a batch of IDs (e.g. 1,000) from a lightweight coordinator (Zookeeper/etcd/a Postgres row with <code>UPDATE ... RETURNING</code>) and hands them out from memory. It's simpler under load than hash-and-retry, guarantees no collisions, and the coordinator is a tiny, easy-to-replicate piece of state.
-        </div>
-      </section>
-
-      <section class="step" id="architecture">
-        <div class="step-head">
-          <span class="step-num">06</span>
-          <div>
-            <h2>High-level architecture</h2>
-            <p class="step-sub">Draw this, then narrate it left to right. Every box should be something you can defend, not just name.</p>
-          </div>
-        </div>
-
-        <figure class="diagram-frame">
-          <svg viewBox="0 0 980 420" role="img" aria-label="Architecture diagram: client through load balancer to stateless app servers, backed by a cache-aside Redis layer over a sharded key-value store, a separate key-generation coordinator, and an asynchronous analytics pipeline that never blocks the redirect">
-            <defs>
-              <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                <polygon points="0,0 7,3 0,6" fill="currentColor"/>
-              </marker>
-            </defs>
-            <g font-family="IBM Plex Sans, sans-serif" font-size="13">
-              <!-- Client -->
-              <rect x="20" y="170" width="110" height="50" rx="8" fill="none" stroke="currentColor"/>
-              <text x="75" y="200" text-anchor="middle" fill="currentColor">Client</text>
-
-              <line x1="130" y1="195" x2="178" y2="195" stroke="currentColor" marker-end="url(#arr2)"/>
-
-              <!-- LB -->
-              <rect x="180" y="170" width="120" height="50" rx="8" fill="none" stroke="currentColor"/>
-              <text x="240" y="195" text-anchor="middle" fill="currentColor">Load</text>
-              <text x="240" y="211" text-anchor="middle" fill="currentColor">Balancer</text>
-
-              <line x1="300" y1="185" x2="345" y2="130" stroke="currentColor" marker-end="url(#arr2)"/>
-              <line x1="300" y1="205" x2="345" y2="260" stroke="currentColor" marker-end="url(#arr2)"/>
-
-              <!-- App servers -->
-              <rect x="347" y="100" width="150" height="50" rx="8" fill="none" stroke="var(--accent)"/>
-              <text x="422" y="130" text-anchor="middle" fill="var(--accent)" font-weight="600">App server</text>
-              <rect x="347" y="235" width="150" height="50" rx="8" fill="none" stroke="var(--accent)"/>
-              <text x="422" y="265" text-anchor="middle" fill="var(--accent)" font-weight="600">App server</text>
-              <text x="422" y="195" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity="0.6">stateless — scale horizontally</text>
-
-              <!-- Key-gen coordinator -->
-              <line x1="497" y1="115" x2="565" y2="60" stroke="currentColor" stroke-dasharray="3 3" marker-end="url(#arr2)"/>
-              <rect x="567" y="35" width="160" height="46" rx="8" fill="none" stroke="currentColor"/>
-              <text x="647" y="60" text-anchor="middle" fill="currentColor" font-size="12.5">Key-gen coordinator</text>
-              <text x="647" y="74" text-anchor="middle" fill="currentColor" font-size="10.5" fill-opacity="0.65">hands out ID ranges</text>
-
-              <!-- Cache -->
-              <line x1="422" y1="150" x2="422" y2="200" stroke="currentColor" marker-end="url(#arr2)"/>
-              <line x1="422" y1="235" x2="422" y2="200" stroke="currentColor" marker-end="url(#arr2)"/>
-              <rect x="347" y="200" width="150" height="0" fill="none" stroke="none"/>
-              <rect x="530" y="175" width="150" height="50" rx="8" fill="none" stroke="currentColor"/>
-              <text x="605" y="196" text-anchor="middle" fill="currentColor">Cache (Redis)</text>
-              <text x="605" y="211" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.65">cache-aside, LRU</text>
-              <line x1="497" y1="200" x2="528" y2="200" stroke="currentColor" marker-end="url(#arr2)"/>
-
-              <!-- DB shards -->
-              <line x1="680" y1="200" x2="720" y2="200" stroke="currentColor" marker-end="url(#arr2)"/>
-              <g stroke="currentColor" fill="none">
-                <path d="M730 175 a25 8 0 0 1 50 0 v50 a25 8 0 0 1 -50 0 z"/>
-                <path d="M730 175 a25 8 0 0 0 50 0" />
-                <path d="M800 175 a25 8 0 0 1 50 0 v50 a25 8 0 0 1 -50 0 z"/>
-                <path d="M800 175 a25 8 0 0 0 50 0" />
-                <path d="M870 175 a25 8 0 0 1 50 0 v50 a25 8 0 0 1 -50 0 z"/>
-                <path d="M870 175 a25 8 0 0 0 50 0" />
-              </g>
-              <text x="825" y="255" text-anchor="middle" fill="currentColor" font-size="11.5">DB shards — by hash(short_code)</text>
-
-              <!-- Analytics -->
-              <line x1="422" y1="285" x2="422" y2="330" stroke="currentColor" stroke-dasharray="3 3" marker-end="url(#arr2)"/>
-              <rect x="347" y="330" width="150" height="46" rx="8" fill="none" stroke="currentColor"/>
-              <text x="422" y="352" text-anchor="middle" fill="currentColor" font-size="12.5">Event queue</text>
-              <text x="422" y="366" text-anchor="middle" fill="currentColor" font-size="10.5" fill-opacity="0.65">Kafka / SQS</text>
-              <line x1="497" y1="353" x2="565" y2="353" stroke="currentColor" marker-end="url(#arr2)"/>
-              <rect x="567" y="330" width="160" height="46" rx="8" fill="none" stroke="currentColor"/>
-              <text x="647" y="352" text-anchor="middle" fill="currentColor" font-size="12.5">Analytics store</text>
-              <text x="647" y="366" text-anchor="middle" fill="currentColor" font-size="10.5" fill-opacity="0.65">click counts, off hot path</text>
-            </g>
-          </svg>
-          <figcaption><b>Read this left to right:</b> the load balancer fronts stateless app servers so you can scale reads horizontally; app servers check out ID ranges from a small coordinator instead of hitting the DB for every write; a Redis cache-aside layer absorbs the ~100:1 read-heavy traffic before it reaches sharded storage; and click logging goes through a queue so a slow analytics write can never add latency to someone's redirect.</figcaption>
-        </figure>
-      </section>
-
-      <section class="step" id="paths">
-        <div class="step-head">
-          <span class="step-num">07</span>
-          <div>
-            <h2>Read path vs. write path</h2>
-            <p class="step-sub">Walk both explicitly — they touch the same boxes in a different order, and the read path is the one that has to be fast.</p>
-          </div>
-        </div>
-
-        <figure class="diagram-frame">
-          <svg viewBox="0 0 920 300" role="img" aria-label="Write path: client to app server to key generator to database to cache. Read path: client to app server to cache, branching to a fast cache hit or a slower database lookup on a miss that then repopulates the cache">
-            <defs>
-              <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
-                <polygon points="0,0 7,3 0,6" fill="currentColor"/>
-              </marker>
-            </defs>
-            <g font-family="IBM Plex Mono, monospace" font-size="12">
-              <text x="20" y="24" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="currentColor">Write — POST /shorten</text>
-              <g fill="none" stroke="currentColor">
-                <rect x="20" y="40" width="110" height="38" rx="7"/>
-                <rect x="180" y="40" width="130" height="38" rx="7"/>
-                <rect x="360" y="40" width="140" height="38" rx="7"/>
-                <rect x="550" y="40" width="150" height="38" rx="7"/>
-                <rect x="750" y="40" width="150" height="38" rx="7"/>
-              </g>
-              <text x="75" y="63" text-anchor="middle" fill="currentColor">Client</text>
-              <text x="245" y="63" text-anchor="middle" fill="currentColor">App server</text>
-              <text x="430" y="63" text-anchor="middle" fill="currentColor">Get ID from range</text>
-              <text x="625" y="63" text-anchor="middle" fill="currentColor">base62-encode</text>
-              <text x="825" y="63" text-anchor="middle" fill="currentColor">Write DB + cache</text>
-              <line x1="130" y1="59" x2="178" y2="59" stroke="currentColor" marker-end="url(#arr3)"/>
-              <line x1="310" y1="59" x2="358" y2="59" stroke="currentColor" marker-end="url(#arr3)"/>
-              <line x1="500" y1="59" x2="548" y2="59" stroke="currentColor" marker-end="url(#arr3)"/>
-              <line x1="700" y1="59" x2="748" y2="59" stroke="currentColor" marker-end="url(#arr3)"/>
-            </g>
-
-            <g font-family="IBM Plex Mono, monospace" font-size="12">
-              <text x="20" y="130" font-family="IBM Plex Sans, sans-serif" font-size="13" font-weight="600" fill="currentColor">Read — GET /{code}</text>
-              <rect x="20" y="146" width="110" height="38" rx="7" fill="none" stroke="currentColor"/>
-              <text x="75" y="169" text-anchor="middle" fill="currentColor">Client</text>
-              <line x1="130" y1="165" x2="178" y2="165" stroke="currentColor" marker-end="url(#arr3)"/>
-              <rect x="180" y="146" width="130" height="38" rx="7" fill="none" stroke="currentColor"/>
-              <text x="245" y="169" text-anchor="middle" fill="currentColor">App server</text>
-              <line x1="310" y1="165" x2="358" y2="165" stroke="currentColor" marker-end="url(#arr3)"/>
-              <rect x="360" y="146" width="140" height="38" rx="7" fill="none" stroke="currentColor"/>
-              <text x="430" y="169" text-anchor="middle" fill="currentColor">Cache lookup</text>
-
-              <line x1="500" y1="155" x2="548" y2="120" stroke="var(--good)" marker-end="url(#arr3)"/>
-              <text x="524" y="130" fill="var(--good)" font-size="11">hit</text>
-              <rect x="550" y="96" width="160" height="38" rx="7" fill="none" stroke="var(--good)"/>
-              <text x="630" y="119" text-anchor="middle" fill="var(--good)" font-weight="600">301 → long_url</text>
-              <text x="630" y="150" text-anchor="middle" fill="currentColor" fill-opacity="0.6" font-size="10.5">~1ms · handles ~99% of traffic</text>
-
-              <line x1="500" y1="175" x2="548" y2="210" stroke="var(--warn)" marker-end="url(#arr3)"/>
-              <text x="524" y="205" fill="var(--warn)" font-size="11">miss</text>
-              <rect x="550" y="192" width="150" height="38" rx="7" fill="none" stroke="var(--warn)"/>
-              <text x="625" y="215" text-anchor="middle" fill="var(--warn)">DB lookup</text>
-              <line x1="700" y1="211" x2="748" y2="211" stroke="var(--warn)" marker-end="url(#arr3)"/>
-              <rect x="750" y="192" width="150" height="38" rx="7" fill="none" stroke="var(--warn)"/>
-              <text x="825" y="211" text-anchor="middle" fill="var(--warn)">Populate cache,</text>
-              <text x="825" y="225" text-anchor="middle" fill="currentColor" fill-opacity="0.6" font-size="10">then 301</text>
-            </g>
-            <text x="20" y="270" font-size="12" fill="currentColor" fill-opacity="0.65" font-family="IBM Plex Sans, sans-serif">Write is synchronous end-to-end (a user is waiting on a link). Read forks: the hit path never touches the DB at all.</text>
-          </svg>
-          <figcaption>The redirect handler is the latency-critical path in this whole system — everything in step 08 exists to keep it on the green line above as often as possible.</figcaption>
-        </figure>
-      </section>
-
-      <section class="step" id="scaling">
-        <div class="step-head">
-          <span class="step-num">08</span>
-          <div>
-            <h2>Scaling &amp; caching</h2>
-            <p class="step-sub">Reads outnumber writes 100:1 — every lever here exists to keep the cheap path cheap.</p>
-          </div>
-        </div>
-        <div class="grid-cards">
-          <div class="card"><h4>Cache-aside + LRU</h4><p>Redis in front of the DB; evict least-recently-used. Hot links (viral posts) stay resident, cold ones age out.</p></div>
-          <div class="card"><h4>DB sharding</h4><p>Shard by <code>hash(short_code) mod N</code> — even distribution, and lookups are always single-shard since you always have the key.</p></div>
-          <div class="card"><h4>Read replicas</h4><p>Even sharded, add replicas per shard for read throughput; writes go to primary, reads fan out.</p></div>
-          <div class="card"><h4>CDN / edge redirect</h4><p>For read-heavy public links, cache the 301 at the edge (CDN) so popular redirects never reach your origin at all.</p></div>
-        </div>
-        <div class="callout" style="margin-top:14px">
-          <span class="label">A number worth stating</span>
-          If Redis holds keys for the hottest ~20% of links and that 20% accounts for ~80% of traffic (it will — link popularity is heavily skewed), a cache sized for a few GB of hot keys can absorb the vast majority of your 40,000 reads/sec peak.
-        </div>
-      </section>
-
-      <section class="step" id="redirect">
-        <div class="step-head">
-          <span class="step-num">09</span>
-          <div>
-            <h2>301 vs. 302: the tradeoff they want you to name</h2>
-            <p class="step-sub">A small HTTP detail that's a favorite because it has a real, statable tradeoff.</p>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th></th><th>301 Moved Permanently</th><th>302 Found (temporary)</th></tr></thead>
-            <tbody>
-              <tr><td>Browser behavior</td><td>Caches the redirect locally</td><td>Never caches; always re-asks your server</td></tr>
-              <tr><td>Server load</td><td><span class="pill good">Lower</span> — repeat visits skip your server entirely</td><td><span class="pill warn">Higher</span> — every click hits your redirect service</td></tr>
-              <tr><td>Click analytics</td><td><span class="pill bad">Broken</span> — cached clicks never reach you</td><td><span class="pill good">Accurate</span> — you see every click</td></tr>
-              <tr><td>Use when</td><td>You don't need per-click analytics</td><td>Analytics is a stated requirement</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="callout">
-          <span class="label">The line to say</span>
-          "Since analytics is in scope, I'll use 302 — the extra origin traffic is exactly the price of seeing every click, and it's the reason the read path has to stay this cheap."
-        </div>
-      </section>
-
-      <section class="step" id="analytics">
-        <div class="step-head">
-          <span class="step-num">10</span>
-          <div>
-            <h2>Analytics, kept off the hot path</h2>
-            <p class="step-sub">The rule: nothing that isn't required to answer the redirect gets to add latency to it.</p>
-          </div>
-        </div>
-        <div class="prose">
-          <p>The app server fires a small event (<code>short_code</code>, timestamp, referrer, coarse geo/IP) onto a queue and returns the redirect immediately — it does not wait for that write to land anywhere. A separate consumer batches events into an analytics store (a column store or a time-series DB, not the primary URL table) for later aggregation into click counts and dashboards.</p>
-        </div>
-        <pre><code>redirect_handler(short_code):
-    long_url = cache_or_db_lookup(short_code)
-    queue.publish_async({code: short_code, ts: now(), ref: referrer})  # fire-and-forget
-    return HTTP 302 Location: long_url  # doesn't wait on the line above</code></pre>
-      </section>
-
-      <section class="step" id="edge-cases">
-        <div class="step-head">
-          <span class="step-num">11</span>
-          <div>
-            <h2>Edge cases worth raising unprompted</h2>
-            <p class="step-sub">Bringing these up yourself, briefly, signals seniority — you don't need to solve all of them deeply.</p>
-          </div>
-        </div>
-        <div class="qa">
-          <div class="qa-item"><div class="q">Custom alias collides with an existing code</div><div class="a">Check existence on write (this path can afford the extra round-trip, it's rare and user-facing); return 409 if taken.</div></div>
-          <div class="qa-item"><div class="q">Link expiration &amp; cleanup</div><div class="a">Store <code>expires_at</code>; check it lazily on read (cheap, no extra job) and run an offline batch job to reclaim expired rows and free their short codes.</div></div>
-          <div class="qa-item"><div class="q">Rate limiting / abuse</div><div class="a">Token-bucket limiter per API key/IP at the load balancer or API gateway, ahead of the app servers — stop abuse before it costs you compute.</div></div>
-          <div class="qa-item"><div class="q">Malicious / phishing URLs</div><div class="a">Check submitted long URLs against a safe-browsing blocklist (e.g. Google Safe Browsing API) at write time, and periodically re-scan stored URLs since a benign site can turn malicious later.</div></div>
-          <div class="qa-item"><div class="q">Key-gen coordinator range handoff</div><div class="a">If a server crashes mid-range, those few unused IDs are simply lost — that's fine, the key space (3.5 trillion) is orders of magnitude larger than you'll ever need.</div></div>
-          <div class="qa-item"><div class="q">Sequential / guessable IDs</div><div class="a">If codes are assigned from a monotonic counter, don't base62-encode it verbatim — shuffle bits or XOR with a fixed mask first, so short codes aren't trivially enumerable.</div></div>
-        </div>
-      </section>
-
-      <section class="step" id="followups">
-        <div class="step-head">
-          <span class="step-num">12</span>
-          <div>
-            <h2>Curveball follow-ups</h2>
-            <p class="step-sub">Interviewers reuse these because each one tests whether your design was principled or memorized.</p>
-          </div>
-        </div>
-        <div class="qa">
-          <div class="qa-item"><div class="q">"Your cache node just died — what happens?"</div><div class="a">Reads fall through to the DB (higher latency, not an outage) until the node — or its replica — is back; this is exactly why cache-aside is safer here than a write-through cache you'd depend on for correctness.</div></div>
-          <div class="qa-item"><div class="q">"How do you avoid two servers handing out the same ID?"</div><div class="a">The coordinator hands out non-overlapping ranges atomically (a single row update with <code>RETURNING</code>, or a Zookeeper znode); two servers can never be assigned the same range.</div></div>
-          <div class="qa-item"><div class="q">"What if one shard gets a disproportionate share of traffic?"</div><div class="a">Hashing the short code (not the long URL, not sequential ranges) distributes load evenly — a hot individual link is absorbed by the cache layer before it ever reaches the shard.</div></div>
-          <div class="qa-item"><div class="q">"How would you support a custom domain per customer?"</div><div class="a">Add a <code>domain</code> column and make the composite (domain, short_code) the lookup key; the redirect service resolves the incoming Host header first.</div></div>
-          <div class="qa-item"><div class="q">"Design it for strong consistency instead."</div><div class="a">State the cost plainly: you'd move from an eventually-consistent cache/replica setup to synchronous replication or a consensus store, trading availability and latency for guaranteed-fresh reads — and that trade is usually the wrong one for a redirect service.</div></div>
-        </div>
-      </section>
-
-      <section class="step" id="script">
-        <div class="step-head">
-          <span class="step-num">13</span>
-          <div>
-            <h2>The 40-minute script</h2>
-            <p class="step-sub">A pacing guide, not a transcript — adapt the minutes to how much the interviewer wants to dig into any one step.</p>
-          </div>
-        </div>
-        <div class="script">
-          <ol>
-            <li><b>0–5 min</b> — Ask the requirements questions from step 01. Write functional / non-functional on the board.</li>
-            <li><b>5–10 min</b> — Estimate traffic and storage (step 02). State the 62⁷ key-space number out loud.</li>
-            <li><b>10–15 min</b> — Sketch the API (step 03) and the single-table data model (step 04).</li>
-            <li><b>15–22 min</b> — Present the short-code generation tradeoff (step 05) and commit to range-based counters.</li>
-            <li><b>22–30 min</b> — Draw the high-level architecture (step 06), then narrate the write and read paths separately (step 07).</li>
-            <li><b>30–36 min</b> — Scaling levers (step 08): cache-aside, sharding, replicas, CDN. Land the 301-vs-302 call (step 09) and the async analytics pipeline (step 10).</li>
-            <li><b>36–40 min</b> — Volunteer two edge cases (step 11) before they're asked, and leave room for follow-ups (step 12).</li>
-          </ol>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <footer>Reference notes for interview prep — not a production spec. Numbers throughout are illustrative back-of-envelope estimates.</footer>
+  <footer>Personal interview-prep notes — not production specs.</footer>
 </div>
+</body>
+</html>
